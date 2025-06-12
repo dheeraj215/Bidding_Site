@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Gavel, Clock, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
+import { Gavel, Clock, CheckCircle, XCircle, TrendingUp, Wifi, WifiOff } from 'lucide-react';
 import { AuctionItem, User } from '../../types';
 import { AuctionGrid } from './AuctionGrid';
 import { AuctionDetail } from './AuctionDetail';
@@ -7,17 +7,23 @@ import { AuctionDetail } from './AuctionDetail';
 interface UserDashboardProps {
   user: User;
   auctions: AuctionItem[];
+  isConnected?: boolean;
   onPlaceBid: (auctionId: string, amount: number, user: User) => void;
   getAuctionBids: (auctionId: string) => any[];
   onLogout: () => void;
+  onJoinAuction?: (auctionId: string) => void;
+  onLeaveAuction?: (auctionId: string) => void;
 }
 
 export const UserDashboard: React.FC<UserDashboardProps> = ({
   user,
   auctions,
+  isConnected = true,
   onPlaceBid,
   getAuctionBids,
-  onLogout
+  onLogout,
+  onJoinAuction = () => {},
+  onLeaveAuction = () => {}
 }) => {
   const [activeTab, setActiveTab] = useState<'active' | 'upcoming' | 'expired'>('active');
   const [selectedAuction, setSelectedAuction] = useState<AuctionItem | null>(null);
@@ -45,9 +51,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         auction={selectedAuction}
         user={user}
         bids={getAuctionBids(selectedAuction.id)}
+        isConnected={isConnected}
         onPlaceBid={onPlaceBid}
         onBack={() => setSelectedAuction(null)}
         onLogout={onLogout}
+        onJoinAuction={onJoinAuction}
+        onLeaveAuction={onLeaveAuction}
       />
     );
   }
@@ -63,12 +72,31 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 <Gavel className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Bidding Platform</h1>
-                <p className="text-sm text-gray-500">Discover amazing auctions</p>
+                <h1 className="text-xl font-bold text-gray-900">PropertyBazaar</h1>
+                <p className="text-sm text-gray-500">Live Property Auctions</p>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* Connection Status */}
+              <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
+                isConnected 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {isConnected ? (
+                  <>
+                    <Wifi className="h-4 w-4" />
+                    <span>Live</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-4 w-4" />
+                    <span>Offline</span>
+                  </>
+                )}
+              </div>
+              
               <div className="flex items-center space-x-3">
                 <img
                   src={user.avatar}
@@ -140,7 +168,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Active Auctions ({activeAuctions.length})
+                Live Auctions ({activeAuctions.length})
               </button>
               <button
                 onClick={() => setActiveTab('upcoming')}
@@ -160,7 +188,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Expired ({expiredAuctions.length})
+                Completed ({expiredAuctions.length})
               </button>
             </nav>
           </div>

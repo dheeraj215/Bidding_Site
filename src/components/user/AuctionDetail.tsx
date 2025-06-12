@@ -1,23 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, MapPin, Gavel, TrendingUp, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, Gavel, TrendingUp, Users, ChevronLeft, ChevronRight, Wifi, WifiOff } from 'lucide-react';
 import { AuctionItem, User, Bid } from '../../types';
 
 interface AuctionDetailProps {
   auction: AuctionItem;
   user: User;
   bids: Bid[];
+  isConnected: boolean;
   onPlaceBid: (auctionId: string, amount: number, user: User) => void;
   onBack: () => void;
   onLogout: () => void;
+  onJoinAuction: (auctionId: string) => void;
+  onLeaveAuction: (auctionId: string) => void;
 }
 
 export const AuctionDetail: React.FC<AuctionDetailProps> = ({
   auction,
   user,
   bids,
+  isConnected,
   onPlaceBid,
   onBack,
-  onLogout
+  onLogout,
+  onJoinAuction,
+  onLeaveAuction
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [bidAmount, setBidAmount] = useState(auction.currentPrice + 100);
@@ -28,6 +34,16 @@ export const AuctionDetail: React.FC<AuctionDetailProps> = ({
     seconds: number;
     total: number;
   }>({ days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 });
+
+  useEffect(() => {
+    // Join auction room when component mounts
+    onJoinAuction(auction.id);
+    
+    return () => {
+      // Leave auction room when component unmounts
+      onLeaveAuction(auction.id);
+    };
+  }, [auction.id, onJoinAuction, onLeaveAuction]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -48,6 +64,11 @@ export const AuctionDetail: React.FC<AuctionDetailProps> = ({
     return () => clearInterval(timer);
   }, [auction.endTime]);
 
+  useEffect(() => {
+    // Update bid amount when current price changes
+    setBidAmount(auction.currentPrice + 100);
+  }, [auction.currentPrice]);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -65,11 +86,14 @@ export const AuctionDetail: React.FC<AuctionDetailProps> = ({
     setCurrentImageIndex((prev) => (prev - 1 + auction.images.length) % auction.images.length);
   };
 
-  const handlePlaceBid = (e: React.FormEvent) => {
+  const handlePlaceBid = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (bidAmount > auction.currentPrice && auction.status === 'active') {
-      onPlaceBid(auction.id, bidAmount, user);
-      setBidAmount(auction.currentPrice + 100);
+    if (bidAmount > auction.currentPrice && auction.status === 'active' && isConnected) {
+      try {
+        await onPlaceBid(auction.id, bidAmount, user);
+      } catch (error) {
+        console.error('Failed to place bid:', error);
+      }
     }
   };
 
@@ -97,6 +121,25 @@ export const AuctionDetail: React.FC<AuctionDetailProps> = ({
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* Connection Status */}
+              <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
+                isConnected 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {isConnected ? (
+                  <>
+                    <Wifi className="h-4 w-4" />
+                    <span>Live</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-4 w-4" />
+                    <span>Offline</span>
+                  </>
+                )}
+              </div>
+              
               <div className="flex items-center space-x-3">
                 <img
                   src={user.avatar}
@@ -345,11 +388,11 @@ export const AuctionDetail: React.FC<AuctionDetailProps> = ({
 
                   <button
                     type="submit"
-                    disabled={bidAmount <= auction.currentPrice}
+                    disabled={bidAmount <= auction.currentPrice || !isConnected}
                     className="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg font-medium"
                   >
                     <Gavel className="h-5 w-5 mr-2" />
-                    Place Bid {formatCurrency(bidAmount)}
+                    {!isConnected ? 'Connecting...' : `Place Bid ${formatCurrency(bidAmount)}`}
                   </button>
                 </form>
               )}
@@ -373,7 +416,7 @@ export const AuctionDetail: React.FC<AuctionDetailProps> = ({
             {/* Bid History */}
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Bid History</h3>
+                <h3 className="text-lg font-medium text-gray-900">Live Bid History</h3>
                 <div className="flex items-center space-x-1 text-sm text-gray-500">
                   <Users className="h-4 w-4" />
                   <span>{bids.length} bids</span>
@@ -387,8 +430,8 @@ export const AuctionDetail: React.FC<AuctionDetailProps> = ({
                   bids.map((bid, index) => (
                     <div
                       key={bid.id}
-                      className={`flex items-center justify-between p-3 rounded-lg ${
-                        index === 0 ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
+                      className={`flex items-center justify-between p-3 rounded-lg transition-all ${
+                        index === 0 ? 'bg-green-50 border border-green-200 animate-pulse' : 'bg-gray-50'
                       }`}
                     >
                       <div className="flex items-center space-x-3">
