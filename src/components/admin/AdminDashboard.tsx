@@ -8,6 +8,8 @@ interface AdminDashboardProps {
   user: User;
   auctions: AuctionItem[];
   onCreateAuction: (auctionData: Omit<AuctionItem, 'id' | 'currentPrice' | 'status' | 'createdAt'>) => void;
+  onUpdateAuction: (auctionId: string, updates: Partial<AuctionItem>) => void;
+  onDeleteAuction: (auctionId: string) => void;
   onLogout: () => void;
 }
 
@@ -15,6 +17,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   user,
   auctions,
   onCreateAuction,
+  onUpdateAuction,
+  onDeleteAuction,
   onLogout
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'create' | 'manage'>('overview');
@@ -44,7 +48,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-500">Manage your auctions</p>
+                <p className="text-sm text-gray-500">PropertyBazaar Management</p>
               </div>
             </div>
             
@@ -142,7 +146,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <XCircle className="h-6 w-6 text-red-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Expired</p>
+                    <p className="text-sm font-medium text-gray-500">Completed</p>
                     <p className="text-2xl font-bold text-gray-900">{expiredAuctions.length}</p>
                   </div>
                 </div>
@@ -237,7 +241,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {activeTab === 'manage' && (
-          <AuctionManagement auctions={auctions} />
+          <AuctionManagement 
+            auctions={auctions} 
+            onUpdateAuction={onUpdateAuction}
+            onDeleteAuction={onDeleteAuction}
+          />
         )}
       </main>
     </div>

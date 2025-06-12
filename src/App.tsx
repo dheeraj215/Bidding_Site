@@ -15,8 +15,13 @@ function App() {
   const {
     auctions,
     createAuction,
+    updateAuction,
+    deleteAuction,
     placeBid,
     getAuctionBids,
+    joinAuctionRoom,
+    leaveAuctionRoom,
+    isConnected,
     loading: auctionsLoading
   } = useAuctions();
 
@@ -25,7 +30,7 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-lg font-semibold text-gray-700">Loading...</p>
+          <p className="text-lg font-semibold text-gray-700">Loading PropertyBazaar...</p>
         </div>
       </div>
     );
@@ -70,6 +75,8 @@ function App() {
         user={user}
         auctions={auctions}
         onCreateAuction={createAuction}
+        onUpdateAuction={updateAuction}
+        onDeleteAuction={deleteAuction}
         onLogout={() => {
           logout();
           setSelectedUserType(null);
@@ -82,8 +89,11 @@ function App() {
     <UserDashboard
       user={user!}
       auctions={auctions}
+      isConnected={isConnected}
       onPlaceBid={placeBid}
       getAuctionBids={getAuctionBids}
+      onJoinAuction={joinAuctionRoom}
+      onLeaveAuction={leaveAuctionRoom}
       onLogout={() => {
         logout();
         setSelectedUserType(null);

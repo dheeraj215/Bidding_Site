@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Upload, X, MapPin, Calendar, DollarSign } from 'lucide-react';
+import { Plus, Upload, X, MapPin, Calendar, DollarSign, CheckCircle } from 'lucide-react';
 import { AuctionItem } from '../../types';
 
 interface CreateAuctionFormProps {
@@ -37,6 +37,8 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onCreateAu
 
   const [newAmenity, setNewAmenity] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const categories = [
     'Real Estate',
@@ -53,50 +55,63 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onCreateAu
     'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800',
     'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800',
     'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800',
-    'https://images.pexels.com/photos/190819/pexels-photo-190819.jpeg?auto=compress&cs=tinysrgb&w=800'
+    'https://images.pexels.com/photos/190819/pexels-photo-190819.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=800',
+    'https://images.pexels.com/photos/277390/pexels-photo-277390.jpeg?auto=compress&cs=tinysrgb&w=800'
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
-    const auctionData: Omit<AuctionItem, 'id' | 'currentPrice' | 'status' | 'createdAt'> = {
-      title: formData.title,
-      description: formData.description,
-      category: formData.category,
-      startingPrice: parseInt(formData.startingPrice),
-      startTime: new Date(formData.startTime),
-      endTime: new Date(formData.endTime),
-      location: formData.location,
-      details: {
-        ...formData.details,
-        area: formData.details.area ? parseInt(formData.details.area) : undefined,
-        bedrooms: formData.details.bedrooms ? parseInt(formData.details.bedrooms) : undefined,
-        bathrooms: formData.details.bathrooms ? parseInt(formData.details.bathrooms) : undefined,
-        parking: formData.details.parking ? parseInt(formData.details.parking) : undefined
-      },
-      amenities: formData.amenities,
-      images: formData.images.length > 0 ? formData.images : [sampleImages[0]],
-      createdBy: 'admin'
-    };
+    try {
+      const auctionData: Omit<AuctionItem, 'id' | 'currentPrice' | 'status' | 'createdAt'> = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        startingPrice: parseInt(formData.startingPrice),
+        startTime: new Date(formData.startTime),
+        endTime: new Date(formData.endTime),
+        location: formData.location,
+        details: {
+          ...formData.details,
+          area: formData.details.area ? parseInt(formData.details.area) : undefined,
+          bedrooms: formData.details.bedrooms ? parseInt(formData.details.bedrooms) : undefined,
+          bathrooms: formData.details.bathrooms ? parseInt(formData.details.bathrooms) : undefined,
+          parking: formData.details.parking ? parseInt(formData.details.parking) : undefined
+        },
+        amenities: formData.amenities,
+        images: formData.images.length > 0 ? formData.images : [sampleImages[0]],
+        createdBy: 'admin'
+      };
 
-    onCreateAuction(auctionData);
-    
-    // Reset form
-    setFormData({
-      title: '',
-      description: '',
-      category: '',
-      startingPrice: '',
-      startTime: '',
-      endTime: '',
-      location: { area: '', city: '', state: '', pincode: '' },
-      details: {
-        type: '', area: '', bedrooms: '', bathrooms: '', parking: '',
-        floor: '', facing: '', age: '', condition: ''
-      },
-      amenities: [],
-      images: []
-    });
+      await onCreateAuction(auctionData);
+      
+      // Show success message
+      setSubmitSuccess(true);
+      setTimeout(() => setSubmitSuccess(false), 3000);
+      
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        category: '',
+        startingPrice: '',
+        startTime: '',
+        endTime: '',
+        location: { area: '', city: '', state: '', pincode: '' },
+        details: {
+          type: '', area: '', bedrooms: '', bathrooms: '', parking: '',
+          floor: '', facing: '', age: '', condition: ''
+        },
+        amenities: [],
+        images: []
+      });
+    } catch (error) {
+      console.error('Failed to create auction:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const addAmenity = () => {
@@ -145,7 +160,18 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onCreateAu
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">Create New Auction</h3>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">Create New Auction</h3>
+            <p className="text-sm text-gray-500 mt-1">Add a new property or item to auction</p>
+          </div>
+          {submitSuccess && (
+            <div className="flex items-center space-x-2 text-green-600">
+              <CheckCircle className="h-5 w-5" />
+              <span className="text-sm font-medium">Auction created successfully!</span>
+            </div>
+          )}
+        </div>
       </div>
       
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -153,7 +179,7 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onCreateAu
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Title
+              Title *
             </label>
             <input
               type="text"
@@ -167,7 +193,7 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onCreateAu
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
+              Category *
             </label>
             <select
               required
@@ -185,7 +211,7 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onCreateAu
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Description
+            Description *
           </label>
           <textarea
             required
@@ -202,7 +228,7 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onCreateAu
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <DollarSign className="inline h-4 w-4 mr-1" />
-              Starting Price ($)
+              Starting Price ($) *
             </label>
             <input
               type="number"
@@ -218,7 +244,7 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onCreateAu
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Calendar className="inline h-4 w-4 mr-1" />
-              Start Time
+              Start Time *
             </label>
             <input
               type="datetime-local"
@@ -232,7 +258,7 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onCreateAu
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Calendar className="inline h-4 w-4 mr-1" />
-              End Time
+              End Time *
             </label>
             <input
               type="datetime-local"
@@ -328,6 +354,36 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onCreateAu
               className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Condition"
             />
+            <input
+              type="number"
+              value={formData.details.bedrooms}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                details: { ...prev.details, bedrooms: e.target.value }
+              }))}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Bedrooms"
+            />
+            <input
+              type="number"
+              value={formData.details.bathrooms}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                details: { ...prev.details, bathrooms: e.target.value }
+              }))}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Bathrooms"
+            />
+            <input
+              type="text"
+              value={formData.details.age}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                details: { ...prev.details, age: e.target.value }
+              }))}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Age (e.g., 5 Years)"
+            />
           </div>
         </div>
 
@@ -358,7 +414,7 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onCreateAu
 
             <div>
               <p className="text-sm text-gray-600 mb-2">Or choose from sample images:</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                 {sampleImages.map((url, index) => (
                   <div key={index} className="relative">
                     <img
@@ -450,9 +506,17 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onCreateAu
         <div className="flex justify-end">
           <button
             type="submit"
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg font-medium"
+            disabled={isSubmitting}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg font-medium"
           >
-            Create Auction
+            {isSubmitting ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Creating...
+              </div>
+            ) : (
+              'Create Auction'
+            )}
           </button>
         </div>
       </form>

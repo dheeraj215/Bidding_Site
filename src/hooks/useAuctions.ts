@@ -90,6 +90,40 @@ export const useAuctions = () => {
             status: 'upcoming',
             createdBy: 'admin',
             createdAt: new Date('2024-01-02')
+          },
+          {
+            id: '3',
+            title: 'Vintage Villa in Goa',
+            description: 'Beautiful vintage villa near the beach with traditional Portuguese architecture and modern amenities.',
+            images: [
+              'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=800',
+              'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800'
+            ],
+            location: {
+              area: 'Candolim',
+              city: 'Goa',
+              state: 'Goa',
+              pincode: '403515'
+            },
+            details: {
+              type: 'Villa',
+              area: 2500,
+              bedrooms: 4,
+              bathrooms: 4,
+              parking: 3,
+              floor: 'Ground + 1',
+              facing: 'North',
+              age: '25 Years'
+            },
+            startingPrice: 5000000,
+            currentPrice: 5200000,
+            startTime: new Date(Date.now() - 2 * 60 * 60 * 1000),
+            endTime: new Date(Date.now() - 30 * 60 * 1000),
+            category: 'Real Estate',
+            amenities: ['Swimming Pool', 'Garden', 'Beach Access', 'Parking', 'Security'],
+            status: 'expired',
+            createdBy: 'admin',
+            createdAt: new Date('2024-01-03')
           }
         ];
 
@@ -149,14 +183,25 @@ export const useAuctions = () => {
       setAuctions(prev => [newAuction, ...prev]);
     };
 
+    const handleAuctionDeleted = (auctionId: string) => {
+      setAuctions(prev => prev.filter(auction => auction.id !== auctionId));
+      setBids(prev => {
+        const newBids = { ...prev };
+        delete newBids[auctionId];
+        return newBids;
+      });
+    };
+
     socket.on('newBid', handleNewBid);
     socket.on('auctionUpdate', handleAuctionUpdate);
     socket.on('newAuction', handleNewAuction);
+    socket.on('auctionDeleted', handleAuctionDeleted);
 
     return () => {
       socket.off('newBid', handleNewBid);
       socket.off('auctionUpdate', handleAuctionUpdate);
       socket.off('newAuction', handleNewAuction);
+      socket.off('auctionDeleted', handleAuctionDeleted);
     };
   }, [socket]);
 
@@ -179,6 +224,43 @@ export const useAuctions = () => {
       return newAuction;
     } catch (error) {
       console.error('Failed to create auction:', error);
+      throw error;
+    }
+  }, [socket, isConnected]);
+
+  const updateAuction = useCallback(async (auctionId: string, updates: Partial<AuctionItem>) => {
+    try {
+      setAuctions(prev => prev.map(auction => 
+        auction.id === auctionId 
+          ? { ...auction, ...updates }
+          : auction
+      ));
+
+      // Emit to socket for real-time updates
+      if (socket && isConnected) {
+        socket.emit('updateAuction', { auctionId, updates });
+      }
+    } catch (error) {
+      console.error('Failed to update auction:', error);
+      throw error;
+    }
+  }, [socket, isConnected]);
+
+  const deleteAuction = useCallback(async (auctionId: string) => {
+    try {
+      setAuctions(prev => prev.filter(auction => auction.id !== auctionId));
+      setBids(prev => {
+        const newBids = { ...prev };
+        delete newBids[auctionId];
+        return newBids;
+      });
+
+      // Emit to socket for real-time updates
+      if (socket && isConnected) {
+        socket.emit('deleteAuction', auctionId);
+      }
+    } catch (error) {
+      console.error('Failed to delete auction:', error);
       throw error;
     }
   }, [socket, isConnected]);
@@ -238,6 +320,8 @@ export const useAuctions = () => {
     loading,
     isConnected,
     createAuction,
+    updateAuction,
+    deleteAuction,
     placeBid,
     getAuctionBids,
     joinAuctionRoom,
